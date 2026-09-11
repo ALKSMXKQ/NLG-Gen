@@ -1,20 +1,34 @@
-# python
-*.pyc
-**/__pycache__/
-.pytest_cache/*
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Environments and editors
+.env
+.venv/
+.idea/
+.vscode/
 .pydevproject
 
-# IDE
-.vscode/*
-
-# Pip
-*.egg-info
-
-# Log files
+# Experiment artifacts
+*.ckpt
+*.gz
 *.out
 *.err
-*.gz
-
-# Custom
-*.ckpt
+*.log
+wget-log*
+*.parquet
 *.zip
+outputs/
+wandb/
+lightning_logs/
+
+# Local data and caches
+data/
+dataset/
+checkpoints/
+cache/
+caches/

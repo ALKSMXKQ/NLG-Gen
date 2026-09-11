@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="NLG-Gen: natural language-guided generation of long-tail critical scenarios for autonomous driving.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23315ea8'/%3E%3Cpath d='M15 46V18h7l20 18V18h7v28h-7L22 28v18z' fill='white'/%3E%3C/svg%3E">
+  <title>NLG-Gen · Long-Tail Critical Scenario Generation</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #5e687d;
+      --line: #dfe5ef;
+      --paper: #ffffff;
+      --soft: #f6f8fc;
+      --blue: #315ea8;
+      --blue-soft: #e9f0fb;
+      --green: #467c63;
+      --green-soft: #eaf4ee;
+      --amber: #a66b24;
+      --amber-soft: #fbf2e7;
+      --violet: #765b9d;
+      --violet-soft: #f1edf7;
+      --shadow: 0 18px 50px rgba(28, 44, 76, .10);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+    a { color: inherit; }
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(223, 229, 239, .85);
+      background: rgba(255, 255, 255, .93);
+      backdrop-filter: blur(14px);
+    }
+    .nav-inner, .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    .nav-inner { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .brand { font-weight: 800; letter-spacing: -.03em; text-decoration: none; }
+    .nav-links { display: flex; gap: 22px; color: var(--muted); font-size: .92rem; }
+    .nav-links a { text-decoration: none; }
+    .nav-links a:hover { color: var(--blue); }
+    .hero {
+      padding: 90px 0 74px;
+      text-align: center;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(49, 94, 168, .11), transparent 30%),
+        radial-gradient(circle at 82% 10%, rgba(70, 124, 99, .10), transparent 28%),
+        linear-gradient(180deg, #fbfcff 0%, #fff 100%);
+    }
+    .eyebrow { color: var(--blue); font-size: .8rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { max-width: 930px; margin: 16px auto 10px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.45rem, 6vw, 4.75rem); line-height: 1.04; letter-spacing: -.045em; }
+    .subtitle { margin: 0 auto 24px; max-width: 850px; color: var(--muted); font-size: clamp(1.05rem, 2.1vw, 1.35rem); }
+    .authors { margin: 10px 0 6px; font-weight: 650; }
+    .affiliations { color: var(--muted); font-size: .93rem; }
+    .actions { margin-top: 30px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .button { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-weight: 750; text-decoration: none; box-shadow: 0 5px 18px rgba(28, 44, 76, .06); }
+    .button.primary { color: #fff; border-color: var(--blue); background: var(--blue); }
+    section { padding: 78px 0; }
+    section.alt { background: var(--soft); }
+    .section-no { color: var(--blue); font-weight: 800; font-size: .78rem; letter-spacing: .13em; text-transform: uppercase; }
+    h2 { margin: 7px 0 14px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.9rem, 4vw, 3rem); line-height: 1.15; letter-spacing: -.025em; }
+    .lead { max-width: 820px; color: var(--muted); font-size: 1.08rem; }
+    .tldr { margin: 30px 0 0; padding: 22px 24px; border-left: 4px solid var(--blue); border-radius: 0 14px 14px 0; background: var(--blue-soft); }
+    .figure { margin: 36px 0 0; padding: 22px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: var(--shadow); }
+    .figure img { width: 100%; display: block; }
+    .caption { margin: 13px 0 0; color: var(--muted); font-size: .88rem; text-align: center; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 30px; }
+    .card { padding: 24px; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
+    .card .tag { display: inline-block; margin-bottom: 14px; padding: 4px 9px; border-radius: 999px; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
+    .card:nth-child(1) .tag { color: var(--green); background: var(--green-soft); }
+    .card:nth-child(2) .tag { color: var(--amber); background: var(--amber-soft); }
+    .card:nth-child(3) .tag { color: var(--violet); background: var(--violet-soft); }
+    .card:nth-child(4) .tag { color: var(--blue); background: var(--blue-soft); }
+    .card h3 { margin: 0 0 8px; font-size: 1.05rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .93rem; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 32px 0; }
+    .stat { padding: 23px 20px; border-radius: 16px; background: #fff; border: 1px solid var(--line); }
+    .stat strong { display: block; color: var(--blue); font-size: 2rem; letter-spacing: -.04em; }
+    .stat span { color: var(--muted); font-size: .86rem; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--muted); background: #fafbfe; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+    tr:last-child td { border-bottom: 0; }
+    .analysis { display: grid; grid-template-columns: 1.05fr .95fr; gap: 22px; align-items: stretch; margin-top: 28px; }
+    .panel { padding: 27px; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
+    .panel h3 { margin-top: 0; }
+    .panel ul { margin-bottom: 0; padding-left: 20px; color: var(--muted); }
+    pre { margin: 0; padding: 23px; overflow-x: auto; border-radius: 16px; background: #151b2a; color: #e7ecf7; font: .88rem/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .copy-row { display: flex; justify-content: flex-end; margin: 10px 0 0; }
+    button { border: 1px solid var(--line); border-radius: 9px; padding: 7px 11px; background: #fff; color: var(--ink); cursor: pointer; font-weight: 700; }
+    footer { padding: 38px 0; border-top: 1px solid var(--line); color: var(--muted); text-align: center; font-size: .9rem; }
+    @media (max-width: 860px) { .grid, .stats { grid-template-columns: repeat(2, 1fr); } .analysis { grid-template-columns: 1fr; } }
+    @media (max-width: 620px) { .nav-links { display: none; } .hero { padding-top: 64px; } .grid, .stats { grid-template-columns: 1fr; } section { padding: 58px 0; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a class="brand" href="#top">NLG-Gen</a>
+      <div class="nav-links">
+        <a href="#abstract">Abstract</a><a href="#method">Method</a><a href="#results">Results</a><a href="#analysis">Analysis</a><a href="#citation">Citation</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="wrap">
+      <div class="eyebrow">Autonomous Driving Safety · 2026</div>
+      <h1>Natural Language-Guided Generation of Long-Tail Critical Scenarios</h1>
+      <p class="subtitle">Controllable hazard injection with constraint-preserving diffusion inpainting for closed-loop safety evaluation.</p>
+      <p class="authors">Tingting Lei · Yifan Zhu · Runxi Zhang · Feng Hu · Hong Yu · Ye Wang</p>
+      <p class="affiliations">Chongqing University of Posts and Telecommunications · Nanjing University of Aeronautics and Astronautics · Tongji University</p>
+      <div class="actions">
+        <a class="button primary" href="static/NLG-Gen.pdf">Paper PDF</a>
+        <a class="button" href="https://github.com/ALKSMXKQ/sledge0421">Code</a>
+        <a class="button" href="#citation">BibTeX</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="abstract">
+      <div class="wrap">
+        <div class="section-no">01 · Abstract</div>
+        <h2>Rare hazards need explicit control</h2>
+        <p class="lead">Real-world driving logs undersample the interactions that matter most for safety. NLG-Gen converts language into executable spatial and kinematic constraints, writes the requested hazard into a structured scenario, and uses diffusion as a local realism restorer under semantic protection.</p>
+        <div class="tldr"><b>TL;DR.</b> Explicit semantic editing establishes the long-tail hazard; mask-guided low-noise diffusion repairs the scene without erasing it; candidate filtering returns simulator-ready scenarios that challenge multiple planners.</div>
+      </div>
+    </section>
+
+    <section class="alt" id="method">
+      <div class="wrap">
+        <div class="section-no">02 · Method</div>
+        <h2>Control first, restore second</h2>
+        <p class="lead">The pipeline separates semantic correctness from generative realism instead of asking one soft conditioning signal to solve both.</p>
+        <div class="figure">
+          <img src="static/nlg_gen_overview.png" alt="Overview of the NLG-Gen pipeline">
+          <p class="caption">Natural-language intent parsing, vector-space hazard injection, constraint-preserving diffusion inpainting, and semantic candidate selection.</p>
+        </div>
+        <div class="grid">
+          <article class="card"><span class="tag">Language</span><h3>Intent parsing</h3><p>Produces scenario type, risk semantics, key agents, geometric relations, and severity.</p></article>
+          <article class="card"><span class="tag">Structure</span><h3>Semantic editing</h3><p>Injects explicit pedestrian-crossing, hard-brake, or cut-in conflicts in vector space.</p></article>
+          <article class="card"><span class="tag">Generation</span><h3>Protected inpainting</h3><p>Uses differential and semantic ROI masks with low-noise latent restoration.</p></article>
+          <article class="card"><span class="tag">Validation</span><h3>Candidate filtering</h3><p>Ranks candidates by semantic alignment, compliance, and preservation fidelity.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="results">
+      <div class="wrap">
+        <div class="section-no">03 · Results</div>
+        <h2>Controllable across hazards and severity</h2>
+        <div class="stats">
+          <div class="stat"><strong>100%</strong><span>Compliance across all three hazard types</span></div>
+          <div class="stat"><strong>92.66</strong><span>Pedestrian-crossing MPA</span></div>
+          <div class="stat"><strong>94.42</strong><span>Aggressive-severity MPA</span></div>
+          <div class="stat"><strong>91.12%</strong><span>Repaint success rate</span></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Scenario</th><th>MPA ↑</th><th>CR ↑</th><th>SQS ↑</th><th>DRL ↑</th></tr></thead>
+            <tbody>
+              <tr><td>Pedestrian crossing</td><td><b>92.66</b></td><td>100</td><td>75.51</td><td>35.98 m</td></tr>
+              <tr><td>Hard braking</td><td>86.93</td><td>100</td><td>73.64</td><td>40.09 m</td></tr>
+              <tr><td>Forced cut-in</td><td>83.48</td><td>100</td><td><b>75.57</b></td><td><b>43.57 m</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt" id="analysis">
+      <div class="wrap">
+        <div class="section-no">04 · Analysis</div>
+        <h2>Generated scenarios expose planner weaknesses</h2>
+        <p class="lead">All three closed-loop planners degrade sharply on the generated set relative to the official nuPlan validation split.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Planner</th><th>nuPlan score ↑</th><th>NLG-Gen score ↑</th><th>Collision-free ↑</th><th>TTC ↑</th></tr></thead>
+            <tbody>
+              <tr><td>PDM-Closed</td><td>97.61</td><td>27.86</td><td>88.75</td><td>76.50</td></tr>
+              <tr><td>Diffusion Planner</td><td>95.70</td><td>18.59</td><td>69.78</td><td>63.45</td></tr>
+              <tr><td>Flow Planner</td><td>97.13</td><td>10.05</td><td>58.81</td><td>51.86</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="analysis">
+          <div class="panel"><h3>What each stage contributes</h3><ul><li>Semantic editing raises MPA from 29.04 to 89.49.</li><li>Diffusion inpainting further raises MPA to 91.65 and interaction strength to 69.91.</li><li>The 41.03 CTC after repainting reveals the current realism-control trade-off.</li></ul></div>
+          <div class="panel"><h3>Evaluation scope</h3><ul><li>Three hazard types and three severity levels.</li><li>nuPlan vector scenarios in a 64 m × 64 m ego-centric field.</li><li>Closed-loop tests with PDM-Closed, Diffusion Planner, and Flow Planner.</li></ul></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="citation">
+      <div class="wrap">
+        <div class="section-no">05 · Citation</div>
+        <h2>Cite NLG-Gen</h2>
+        <pre id="bibtex">@article{lei2026nlggen,
+  title  = {NLG-Gen: Natural Language-Guided Generation of Long-Tail Critical Scenarios for Autonomous Driving},
+  author = {Lei, Tingting and Zhu, Yifan and Zhang, Runxi and Hu, Feng and Yu, Hong and Wang, Ye},
+  year   = {2026}
+}</pre>
+        <div class="copy-row"><button id="copy" type="button">Copy BibTeX</button></div>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="wrap">NLG-Gen · Built on SLEDGE and evaluated with nuPlan · Code released under Apache-2.0</div></footer>
+  <script>
+    const copy = document.getElementById('copy');
+    copy.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(document.getElementById('bibtex').textContent);
+      copy.textContent = 'Copied';
+      setTimeout(() => { copy.textContent = 'Copy BibTeX'; }, 1400);
+    });
+  </script>
+</body>
+</html>

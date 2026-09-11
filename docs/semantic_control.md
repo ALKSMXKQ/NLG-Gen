@@ -1,181 +1,100 @@
+# Reproducing NLG-Gen
 
+This guide covers the paper pipeline from source scenario caches to evaluated, simulator-ready critical scenarios. Commands use environment variables so that experiments remain portable across machines.
 
+## 1. Configure paths
 
-后半段流程：
-original raw + edited raw
-→ sledge_raw_feature_processing
-→ encode_raster
-→ diff mask + ROI mask
-→ half-denoise refinement
-→ semantic/compliance 筛选
-→ 导出 simulator-ready sledge_vector.gz
+```bash
+export NUPLAN_DATA_ROOT=/path/to/nuplan
+export NUPLAN_MAPS_ROOT=/path/to/nuplan/maps
+export SLEDGE_DEVKIT_ROOT=/path/to/sledge0421
+export SLEDGE_EXP_ROOT=/path/to/sledge_workspace/exp
 
-将原始场景修改为稀缺高危三场景：
+export NLG_GEN_CONFIG=/path/to/semantic_img2img_cfg.yaml
+export RVAE_CHECKPOINT=/path/to/rvae.ckpt
+export DIFFUSION_CHECKPOINT=/path/to/diffusion/checkpoint
+```
+
+The commands below assume that the SLEDGE autoencoder cache already exists at `$SLEDGE_EXP_ROOT/caches/autoencoder_cache`.
+
+## 2. Build the edited scenario cache
+
+```bash
 python sledge/script/build_multiscenario_raw_cache.py \
-  --input-dir /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/autoencoder_cache \
-  --output-root /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache \
-  --config /home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml \
+  --input-dir "$SLEDGE_EXP_ROOT/caches/autoencoder_cache" \
+  --output-root "$SLEDGE_EXP_ROOT/exp/nlg_gen/raw_cache" \
+  --config "$NLG_GEN_CONFIG" \
   --glob-pattern "**/sledge_raw.gz" \
   --crossing-ratio 0.20 \
   --cut-in-ratio 0.30 \
   --hard-brake-ratio 0.50 \
   --mild-ratio 0.50 \
   --moderate-ratio 0.35 \
-  --aggressive-ratio 0.15
+  --aggressive-ratio 0.15 \
+  --max-scenes 500
+```
 
-  --max-scenes 500 \
+This stage writes the edited B1 cache and a manifest that records each source scenario, structured hazard specification, and editing outcome.
 
+## 3. Run constraint-preserving diffusion inpainting
 
-半扩散生成：
-最终向量结果保存在 /exp/caches/scenario_cache_multiscenario 过程日志文件保存在 multiscenario_refine_output 下
-python $SLEDGE_DEVKIT_ROOT/sledge/script/run_half_denoise_from_tiered_cache.py \
-  --original-dir /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/autoencoder_cache \
-  --edited-dir /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_refine_output \
-  --scenario-cache-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_multiscenario \
-  --config /home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml \
-  --autoencoder-checkpoint /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/training_rvae_model/training_rvae_model/2025.10.17.06.17.03/best_model/epoch45.ckpt \
-  --diffusion-checkpoint /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/training_dit_model/training_dit_diffusion/2025.10.17.18.36.55/checkpoint \
+```bash
+python sledge/script/run_half_denoise_from_tiered_cache.py \
+  --original-dir "$SLEDGE_EXP_ROOT/caches/autoencoder_cache" \
+  --edited-dir "$SLEDGE_EXP_ROOT/exp/nlg_gen/raw_cache" \
+  --output "$SLEDGE_EXP_ROOT/exp/nlg_gen/refinement" \
+  --scenario-cache-root "$SLEDGE_EXP_ROOT/caches/nlg_gen_scenarios" \
+  --config "$NLG_GEN_CONFIG" \
+  --autoencoder-checkpoint "$RVAE_CHECKPOINT" \
+  --diffusion-checkpoint "$DIFFUSION_CHECKPOINT" \
   --guidance-scale 4.0 \
   --low-noise-start-step-seq 10,12,14 \
   --repair-attempts 6 \
   --save-visuals \
   --save-latents
+```
 
-对比实验
-评估G0:sledge生成场景
-python $SLEDGE_DEVKIT_ROOT/sledge/script/evaluate/evaluate_main_table.py \
-  --mode g0 \
-  --method-name G0_SLEDGE \
-  --scenario-cache /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache \
-  --reference-cache /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/eval_main_G0
+The output contains B2 vector scenarios, candidate diagnostics, and optional latent and visualization artifacts.
 
-评估我的B2
-python $SLEDGE_DEVKIT_ROOT/sledge/script/evaluate/evaluate_main_table.py \
+## 4. Evaluate generated scenarios
+
+```bash
+python sledge/script/evaluate/evaluate_main_table.py \
   --mode manifest \
-  --method-name B2_Ours \
-  --manifest /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/scenario_manifest_B2_eval.csv \
+  --method-name NLG_GEN \
+  --manifest "$SLEDGE_EXP_ROOT/exp/nlg_gen/raw_cache/scenario_manifest_B2_eval.csv" \
   --which generated \
-  --generated-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_multiscenario \
-  --reference-cache /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_multiscenario \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/eval_main_B2
-
-python $SLEDGE_DEVKIT_ROOT/sledge/script/evaluate/evaluate_main_table.py \
-  --mode manifest \
-  --method-name B2_Ours \
-  --manifest /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/scenario_manifest_B2_eval.csv \
-  --which generated \
-  --generated-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_multiscenario \
-  --reference-cache /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_multiscenario \
+  --generated-root "$SLEDGE_EXP_ROOT/caches/nlg_gen_scenarios" \
+  --reference-cache "$SLEDGE_EXP_ROOT/caches/nlg_gen_scenarios" \
   --accepted-only \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/eval_main_B2_accept
+  --output "$SLEDGE_EXP_ROOT/exp/nlg_gen/evaluation"
+```
 
-消融实验
-评估B0:sledge
-python $SLEDGE_DEVKIT_ROOT/sledge/script/evaluate/evaluate_generated_scenario_cache.py \
-  --scenario-cache-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache/log/us-ma-boston \
-  --manifest /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/scenario_manifest.csv \
-  --method-name G0 \
-  --emit-master-table-row \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/eval_G0_original_sledge
+Reported metrics include semantic alignment (MPA), compliance rate (CR), scenario quality (SQS), drivable route length (DRL), interaction strength, contextual change (CTC), and repaint success rate (RSR).
 
-python $SLEDGE_DEVKIT_ROOT/sledge/script/evaluate/evaluate_manifest_baseline.py \
-  --manifest /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/scenario_manifest_B2_eval.csv \
-  --which original \
-  --config /home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml \
-  --edited-root /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache_B2_proxy \
-  --original-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/autoencoder_cache \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/eval_B0_original_accept70 \
-  --accepted-only \
-  --manifest-min-alignment 0.7 \
-  --alignment-threshold 0.7 \
-  --sqs-threshold 0.75 \
-  --roi-sqs-threshold 0.75
+## 5. Run the stage-wise ablation
 
-评估B1:仅编辑不扩散
-python $SLEDGE_DEVKIT_ROOT/sledge/script/evaluate/evaluate_manifest_baseline.py \
-  --manifest /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/scenario_manifest.csv \
-  --which edited \
-  --config /home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/eval_B1_edit_only_accept70 \
-  --accepted-only \
-  --manifest-min-alignment 0.7 \
-  --max-scenes 50
+Use `evaluate_manifest_baseline.py` with the same manifest and configuration:
 
-补全汇总文件 rebuild_batch_summary.py
+- `--which original` evaluates B0 without semantic control.
+- `--which edited` evaluates B1 after semantic editing.
+- `--which generated` evaluates B2 after diffusion inpainting.
+- `--which compare` reports paired B1/B2 changes.
 
-评估B2:完整框架
-python $SLEDGE_DEVKIT_ROOT/sledge/script/evaluate/evaluate_manifest_baseline.py \
-  --manifest /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/scenario_manifest_B2_eval.csv \
-  --which generated \
-  --config /home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml \
-  --edited-root /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache_B2_proxy \
-  --generated-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_multiscenario \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/eval_B2_generated_accept70 \
-  --accepted-only \
-  --manifest-min-alignment 0.7 \
-  --alignment-threshold 0.7 \
-  --sqs-threshold 0.75 \
-  --roi-sqs-threshold 0.75
+Keep the manifest, accepted-sample filter, random seeds, and metric thresholds fixed across variants.
 
-比较B1和B2:
-python $SLEDGE_DEVKIT_ROOT/sledge/script/evaluate/evaluate_manifest_baseline.py \
-  --manifest /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/scenario_manifest_B2_eval.csv \
-  --which compare \
-  --config /home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml \
-  --edited-root /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache_B2_proxy \
-  --generated-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_multiscenario \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/eval_B1_vs_B2_accept70 \
-  --accepted-only \
-  --manifest-min-alignment 0.7 \
-  --alignment-threshold 0.7 \
-  --sqs-threshold 0.75 \
-  --roi-sqs-threshold 0.75
+## Output contract
 
-python $SLEDGE_DEVKIT_ROOT/sledge/script/evaluate/evaluate_manifest_baseline.py \
-  --manifest /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/scenario_manifest_B2_eval.csv \
-  --which compare \
-  --config /home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml \
-  --edited-root /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache_B2_proxy \
-  --generated-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_multiscenario \
-  --output /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/eval_B1_vs_B2_accept70_strict \
-  --accepted-only \
-  --manifest-min-alignment 0.7 \
-  --alignment-threshold 0.7 \
-  --sqs-threshold 0.82 \
-  --roi-sqs-threshold 0.80
+| Artifact | Purpose |
+| --- | --- |
+| `scenario_manifest.csv` | Source-to-edit mapping and hazard specification |
+| `scenario_manifest_B2_eval.csv` | Accepted candidates and generation diagnostics |
+| `sledge_raw.gz` | Editable structured scenario representation |
+| `sledge_vector.gz` | Simulator-ready vector scenario |
+| Evaluation tables | Paper metrics and stage-wise comparisons |
 
+## Notes
 
-
-筛选掉有问题的仿真场景
-cd /home16T/home8T_1/leitingting/sledge_workspace/sledge
-
-
-python sledge/script/filter_existing_scenarios_by_metrics.py \
-  --metrics-parquet /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/simulation/sledge_reactive_agents/2026.04.08.22.07.56/aggregator_metric/closed_loop_reactive_agents_weighted_average_metrics_2026.04.08.22.07.56.parquet \
-  --scenario-cache-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_multiscenario0 \
-  --finite-only \
-  --in-place
-
-将 sledge_raw.gz 转换为 sledge_vector.gz
-python /home16T/home8T_1/leitingting/sledge_workspace/sledge/scripts/convert_raw_cache_to_sim_vector_cache.py \
-  --input /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/2021.05.12.22.00.38_veh-35_00215_00995 \
-  --output-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_semantic_check \
-  --config /home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml
-
-python /mnt/data/convert_raw_cache_to_sim_vector_cache.py \
-  --input /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache \
-  --output-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/scenario_cache_semantic_check \
-  --config /path/to/your_config.yaml \
-  --max-scenes 50 \
-  --save-raster-npz
-
-将原始数据和修改后的数据对应都转换为sledge_vector.gz
-python /home16T/home8T_1/leitingting/sledge_workspace/sledge/sledge/script/build_paired_original_edited_vector_caches.py \
-  --manifest /home16T/home8T_1/leitingting/sledge_workspace/exp/exp/multiscenario_raw_cache/scenario_manifest.csv \
-  --config /home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml \
-  --output-root /home16T/home8T_1/leitingting/sledge_workspace/exp/caches/paired_compare_cache \
-  --max-scenes 50 \
-  --accepted-only \
-  --copy-edited-metadata
+- Do not commit nuPlan data, caches, checkpoints, or machine-specific paths.
+- Validate semantic alignment and compliance before closed-loop simulation.
+- Forced cut-in uses a hazardous state proxy because surrounding agents are lane-regularized during rollout.

@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "If you use NLG-Gen, please cite the paper."
+title: "NLG-Gen: Natural Language-Guided Generation of Long-Tail Critical Scenarios for Autonomous Driving"
+type: software
+authors:
+  - family-names: Lei
+    given-names: Tingting
+  - family-names: Zhu
+    given-names: Yifan
+  - family-names: Zhang
+    given-names: Runxi
+  - family-names: Hu
+    given-names: Feng
+  - family-names: Yu
+    given-names: Hong
+  - family-names: Wang
+    given-names: Ye
+repository-code: "https://github.com/ALKSMXKQ/sledge0421"
+license: Apache-2.0
+version: 1.0.0
+date-released: 2026-09-11
+preferred-citation:
+  type: article
+  title: "NLG-Gen: Natural Language-Guided Generation of Long-Tail Critical Scenarios for Autonomous Driving"
+  year: 2026
+  authors:
+    - family-names: Lei
+      given-names: Tingting
+    - family-names: Zhu
+      given-names: Yifan
+    - family-names: Zhang
+      given-names: Runxi
+    - family-names: Hu
+      given-names: Feng
+    - family-names: Yu
+      given-names: Hong
+    - family-names: Wang
+      given-names: Ye
+

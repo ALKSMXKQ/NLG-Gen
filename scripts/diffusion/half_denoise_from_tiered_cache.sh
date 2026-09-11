@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONFIG_PATH=/home16T/home8T_1/leitingting/sledge_workspace/semantic_img2img_cfg.yaml
-AUTOENCODER_CHECKPOINT=/home16T/home8T_1/leitingting/sledge_workspace/exp/exp/training_rvae_model/training_rvae_model/2025.10.17.06.17.03/best_model/epoch45.ckpt
-DIFFUSION_CHECKPOINT=/home16T/home8T_1/leitingting/sledge_workspace/exp/exp/training_dit_model/training_dit_diffusion/2025.10.17.18.36.55/checkpoint
-ORIGINAL_DIR=/home16T/home8T_1/leitingting/sledge_workspace/exp/caches/autoencoder_cache
-EDITED_DIR=/home16T/home8T_1/leitingting/sledge_workspace/exp/caches/tiered_crossing_raw_cache
-OUTPUT_DIR=/home16T/home8T_1/leitingting/sledge_workspace/exp/exp/half_denoise_from_tiered_cache_alternating
+: "${SLEDGE_DEVKIT_ROOT:?Set SLEDGE_DEVKIT_ROOT}"
+: "${SLEDGE_EXP_ROOT:?Set SLEDGE_EXP_ROOT}"
+: "${NLG_GEN_CONFIG:?Set NLG_GEN_CONFIG}"
+: "${RVAE_CHECKPOINT:?Set RVAE_CHECKPOINT}"
+: "${DIFFUSION_CHECKPOINT:?Set DIFFUSION_CHECKPOINT}"
 
-export CUDA_VISIBLE_DEVICES=1
+ORIGINAL_DIR="${ORIGINAL_DIR:-$SLEDGE_EXP_ROOT/caches/autoencoder_cache}"
+EDITED_DIR="${EDITED_DIR:-$SLEDGE_EXP_ROOT/exp/nlg_gen/raw_cache}"
+OUTPUT_DIR="${OUTPUT_DIR:-$SLEDGE_EXP_ROOT/exp/nlg_gen/refinement}"
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 
-python $SLEDGE_DEVKIT_ROOT/sledge/script/run_half_denoise_from_tiered_cache.py \
+python "$SLEDGE_DEVKIT_ROOT/sledge/script/run_half_denoise_from_tiered_cache.py" \
   --original-dir "$ORIGINAL_DIR" \
   --edited-dir "$EDITED_DIR" \
   --output "$OUTPUT_DIR" \
-  --config "$CONFIG_PATH" \
-  --autoencoder-checkpoint "$AUTOENCODER_CHECKPOINT" \
+  --config "$NLG_GEN_CONFIG" \
+  --autoencoder-checkpoint "$RVAE_CHECKPOINT" \
   --diffusion-checkpoint "$DIFFUSION_CHECKPOINT" \
   --num-inference-timesteps 24 \
   --guidance-scale 4.0 \
