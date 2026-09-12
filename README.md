@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="assets/NLG-Gen.pdf"><img src="https://img.shields.io/badge/Paper-PDF-b31b1b.svg" alt="Paper"></a>
-  <a href="docs/index.html"><img src="https://img.shields.io/badge/Project-Page-4f46e5.svg" alt="Project page"></a>
+  <a href="https://alksmxkq.github.io/NLG-Gen/"><img src="https://img.shields.io/badge/Project-Page-4f46e5.svg" alt="Project page"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.9+-3776ab.svg" alt="Python 3.9+"></a>
   <a href="https://pytorch.org/"><img src="https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg" alt="PyTorch 2.0+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-green.svg" alt="Apache-2.0"></a>
@@ -80,8 +80,8 @@ The lower scores on NLG-Gen indicate a more challenging safety-evaluation set; t
 ### Installation
 
 ```bash
-git clone https://github.com/ALKSMXKQ/sledge0421.git
-cd sledge0421
+git clone https://github.com/ALKSMXKQ/NLG-Gen.git
+cd NLG-Gen
 conda env create -f environment.yml
 conda activate sledge
 pip install -e .
@@ -113,7 +113,7 @@ See [Reproducibility](docs/semantic_control.md) for portable commands, required 
 ## Repository layout
 
 ```text
-sledge0421/
+NLG-Gen/
 ├── assets/                  # Paper and framework figure
 ├── docs/                    # Installation, method, and project page
 ├── scripts/                 # Training, generation, and simulation launchers
